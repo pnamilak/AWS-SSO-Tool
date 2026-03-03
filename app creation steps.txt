@@ -1,0 +1,103 @@
+1) Install the tools you need on the Mac
+
+Open Terminal and run these one by one.
+
+A) Install Homebrew (package manager)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+Add brew to PATH (Apple Silicon EC2 Mac usually uses /opt/homebrew):
+
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+Verify:
+
+brew --version
+B) Install Python 3.11 + git
+brew install python@3.11 git
+
+Verify:
+
+python3.11 --version
+git --version
+C) Install AWS CLI (needed for your app)
+brew install awscli
+aws --version
+2) Get your source code onto this Mac
+Option A (best): Git clone
+cd ~
+git clone https://github.com/<org>/<repo>.git AwsSsoSsmDashboardTool-src
+cd AwsSsoSsmDashboardTool-src
+
+If it’s a private repo and asks login, use a GitHub PAT.
+
+Option B: If you already downloaded zip
+
+Unzip it and cd into the folder.
+
+3) Create a clean Python virtual environment (recommended)
+
+Inside your repo folder:
+
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+
+Install your requirements:
+
+pip install -r requirements.txt
+
+Install PyInstaller:
+
+pip install pyinstaller==6.3.0
+4) Run the app in “developer mode” first (before packaging)
+
+This confirms everything works on macOS:
+
+python main.py
+
+Then open Safari inside the Mac and go to:
+
+http://127.0.0.1:5050
+
+If this works, packaging will work.
+
+If it doesn’t, tell me the error shown in Terminal and we’ll fix it.
+
+5) Build the macOS .app on this Mac
+
+From the repo root (same folder where main.py is), run:
+
+pyinstaller --noconfirm --clean --windowed \
+  --name "AwsSsoSsmDashboardTool" \
+  --add-data "app/templates:app/templates" \
+  --add-data "app/static:app/static" \
+  --add-data "schema.sql:schema.sql" \
+  launcher_desktop.py
+
+After build, your app will be at:
+
+ls -la dist/
+
+You should see:
+
+dist/AwsSsoSsmDashboardTool.app
+6) Remove Gatekeeper quarantine for your new build
+xattr -dr com.apple.quarantine dist/AwsSsoSsmDashboardTool.app
+
+Then open it:
+
+Finder → dist → right-click app → Open
+
+7) If the app opens but says “AWS CLI not found”
+
+Check where aws is:
+
+which aws
+
+If it returns /opt/homebrew/bin/aws, then your app is fine.
+
+If your app still can’t find it, set env var before launching:
+
+export AWS_CLI_PATH="$(which aws)"
+open dist/AwsSsoSsmDashboardTool.app
